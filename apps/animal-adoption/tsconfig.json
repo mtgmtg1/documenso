@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": ["@react-router/node", "vite/client"],
+    "lib": ["DOM", "DOM.Iterable", "ES2022"]
+  },
+  "include": ["app", "react-router.config.ts"],
+  "exclude": ["node_modules"]
+}

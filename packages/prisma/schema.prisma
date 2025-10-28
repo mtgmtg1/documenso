@@ -74,6 +74,15 @@ model User {
   passkeys           Passkey[]
   avatarImage        AvatarImage?           @relation(fields: [avatarImageId], references: [id], onDelete: SetNull)
 
+  // Animal adoption relations
+  adoptorContracts         AnimalAdoptionContract[]  @relation("AdoptorContracts")
+  adopterContracts         AnimalAdoptionContract[]  @relation("AdopterContracts")
+  photoReviews             MonthlyPhotoVerification[]
+  reportedDisputes         AdoptionDispute[]
+  resolvedDisputes         AdoptionDispute[]         @relation("DisputeResolver")
+  adopterHistoryRecords    AdopterHistory[]
+  createdContractTemplates AdoptionContractTemplate[]
+
   @@index([email])
 }
 
@@ -426,6 +435,9 @@ model Envelope {
   documentMeta   DocumentMeta @relation(fields: [documentMetaId], references: [id])
 
   envelopeAttachments EnvelopeAttachment[]
+  
+  // Animal adoption relation
+  adoptionContract AnimalAdoptionContract?
 }
 
 model EnvelopeItem {
@@ -1032,4 +1044,224 @@ model OrganisationAuthenticationPortal {
 model Counter {
   id    String @id
   value Int
+}
+
+// ============================================================================
+// Animal Adoption System Models
+// ============================================================================
+
+enum AdoptionContractStatus {
+  DRAFT
+  PENDING_ADOPTER_SIGNATURE
+  PENDING_ADOPTOR_SIGNATURE
+  ACTIVE
+  COMPLETED
+  DISPUTED
+  TERMINATED
+  CANCELLED
+}
+
+enum DisputeStatus {
+  REPORTED
+  UNDER_INVESTIGATION
+  RESOLVED
+  DISMISSED
+}
+
+enum DisputeType {
+  ANIMAL_ABUSE
+  NEGLECT
+  ABANDONMENT
+  FALSE_INFORMATION
+  CONTRACT_VIOLATION
+  PHOTO_FRAUD
+  OTHER
+}
+
+enum PhotoVerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REQUIRES_RESUBMISSION
+}
+
+// Main adoption contract model
+model AnimalAdoptionContract {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Contract details
+  status               AdoptionContractStatus @default(DRAFT)
+  contractSignedAt     DateTime?
+  contractCompletedAt  DateTime?
+  ownershipRetentionYears Int @default(1) // 1-20 years
+  animalValuation      Decimal @default(100000000) // Default ₩100M
+  penaltyAmount        Decimal @default(10000000) // Default ₩10M
+  
+  // Animal information
+  animalName        String
+  animalSpecies     String
+  animalBreed       String?
+  animalAge         Int?
+  animalDescription String?
+  animalPhotoUrl    String?
+  
+  // Adoptor (giver) information
+  adoptorUserId Int
+  adoptorUser   User @relation("AdoptorContracts", fields: [adoptorUserId], references: [id], onDelete: Restrict)
+  adoptorName   String
+  adoptorPhone  String
+  adoptorAddress String
+  adoptorIdNumber String? // For identity verification
+  
+  // Adopter (receiver) information
+  adopterUserId Int?
+  adopterUser   User? @relation("AdopterContracts", fields: [adopterUserId], references: [id], onDelete: Restrict)
+  adopterName   String
+  adopterEmail  String
+  adopterPhone  String
+  adopterAddress String
+  adopterIdNumber String? // For identity verification
+  
+  // Consent and verification
+  identityVerificationConsent Boolean @default(false)
+  criminalRecordCheckConsent  Boolean @default(false)
+  visitationRightsAccepted    Boolean @default(false)
+  
+  // Custom contract terms
+  customTerms String? // JSON or text of custom clauses
+  
+  // Related to Documenso envelope for signing
+  envelopeId String? @unique
+  envelope   Envelope? @relation(fields: [envelopeId], references: [id], onDelete: SetNull)
+  
+  // Relations
+  photoVerifications MonthlyPhotoVerification[]
+  disputes           AdoptionDispute[]
+  adopterHistory     AdopterHistory[]
+  
+  @@index([adoptorUserId])
+  @@index([adopterUserId])
+  @@index([status])
+}
+
+// Track monthly photo submissions
+model MonthlyPhotoVerification {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  contractId String
+  contract   AnimalAdoptionContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  
+  // Photo details
+  photoUrl          String
+  submissionMonth   DateTime // Month this photo is for
+  submittedAt       DateTime @default(now())
+  
+  // Verification details
+  status            PhotoVerificationStatus @default(PENDING)
+  metadataValid     Boolean @default(false)
+  exifData          Json? // Store EXIF metadata
+  aiVerificationScore Float? // AI forgery detection score (0-1)
+  
+  // Special verification requirements
+  hasDatePaper      Boolean @default(false) // Photo includes date paper
+  hasHandGesture    Boolean @default(false) // Photo includes specific hand gesture
+  
+  reviewNotes       String?
+  reviewedAt        DateTime?
+  reviewedByUserId  Int?
+  reviewedBy        User? @relation(fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  
+  @@index([contractId])
+  @@index([status])
+  @@index([submissionMonth])
+}
+
+// Track disputes and violations
+model AdoptionDispute {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  contractId String
+  contract   AnimalAdoptionContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  
+  // Dispute details
+  type          DisputeType
+  status        DisputeStatus @default(REPORTED)
+  description   String
+  evidenceUrls  String[] // URLs to uploaded evidence (photos, documents)
+  
+  // Reporter information
+  reportedByUserId Int
+  reportedBy       User @relation(fields: [reportedByUserId], references: [id], onDelete: Restrict)
+  
+  // Resolution
+  resolutionNotes String?
+  resolvedAt      DateTime?
+  resolvedByUserId Int?
+  resolvedBy       User? @relation("DisputeResolver", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
+  
+  // Actions taken
+  animalRecovered     Boolean @default(false)
+  penaltyApplied      Boolean @default(false)
+  contractTerminated  Boolean @default(false)
+  legalActionTaken    Boolean @default(false)
+  
+  @@index([contractId])
+  @@index([status])
+  @@index([reportedByUserId])
+}
+
+// Track adopter history across all adoptions
+model AdopterHistory {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  
+  contractId String
+  contract   AnimalAdoptionContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Flags for quick checks
+  hasActiveContracts  Boolean @default(true)
+  hasDisputeHistory   Boolean @default(false)
+  totalAdoptions      Int @default(1)
+  successfulAdoptions Int @default(0)
+  
+  notes String? // Admin notes about this adopter
+  
+  @@index([userId])
+  @@unique([userId, contractId])
+}
+
+// Admin-managed contract templates
+model AdoptionContractTemplate {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  name        String
+  description String?
+  isDefault   Boolean @default(false)
+  
+  // Default values for contracts
+  defaultOwnershipRetentionYears Int @default(1)
+  defaultAnimalValuation         Decimal @default(100000000)
+  defaultPenaltyAmount           Decimal @default(10000000)
+  
+  // Template content
+  templateContent String // JSON or structured format
+  
+  // Custom clauses
+  customClauses Json? // Array of custom clause objects
+  
+  createdByUserId Int
+  createdBy       User @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+  
+  @@index([isDefault])
 }

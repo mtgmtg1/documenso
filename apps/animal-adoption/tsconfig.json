@@ -1,11 +1,33 @@
 {
-  "extends": "../../tsconfig.json",
+  "include": ["**/*", "**/.server/**/*", "**/.client/**/*", ".react-router/types/**/*"],
   "compilerOptions": {
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "types": ["@react-router/node", "vite/client"],
-    "lib": ["DOM", "DOM.Iterable", "ES2022"]
-  },
-  "include": ["app", "react-router.config.ts"],
-  "exclude": ["node_modules"]
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "types": ["node", "vite/client"],
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "rootDirs": [".", "./.react-router/types"],
+    "baseUrl": ".",
+    "paths": {
+      "~/*": ["./app/*"],
+      "@documenso/api": ["../../packages/api"],
+      "@documenso/assets": ["../../packages/assets"],
+      "@documenso/auth": ["../../packages/auth"],
+      "@documenso/lib": ["../../packages/lib"],
+      "@documenso/prisma": ["../../packages/prisma"],
+      "@documenso/trpc": ["../../packages/trpc"],
+      "@documenso/ui": ["../../packages/ui"],
+      "@documenso/tailwind-config": ["../../packages/tailwind-config"]
+    },
+    "esModuleInterop": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "moduleDetection": "force",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "useUnknownInCatchVariables": false
+  }
 }

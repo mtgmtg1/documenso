@@ -1,6 +1,6 @@
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router';
 
-import '@documenso/tailwind-config/tailwind.css';
+import './app.css';
 
 import type { Route } from './+types/root';
 

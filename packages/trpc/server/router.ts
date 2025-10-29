@@ -1,4 +1,5 @@
 import { adminRouter } from './admin-router/router';
+import { animalAdoptionRouter } from './animal-adoption-router/router';
 import { apiTokenRouter } from './api-token-router/router';
 import { authRouter } from './auth-router/router';
 import { documentRouter } from './document-router/router';
@@ -31,6 +32,7 @@ export const appRouter = router({
   template: templateRouter,
   webhook: webhookRouter,
   embeddingPresign: embeddingPresignRouter,
+  animalAdoption: animalAdoptionRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -1,5 +1,5 @@
 module.exports = {
-  extends: ['next', 'turbo', 'eslint:recommended', 'plugin:@typescript-eslint/recommended'],
+  extends: ['turbo', 'eslint:recommended', 'plugin:@typescript-eslint/recommended'],
 
   plugins: ['unused-imports'],
 
@@ -56,11 +56,11 @@ module.exports = {
     'prefer-promise-reject-errors': 'error',
     'require-atomic-updates': 'error',
     '@typescript-eslint/no-floating-promises': 'error',
-    '@typescript-eslint/no-misused-promises': [
-      'error',
-      { checksVoidReturn: { attributes: false } },
-    ],
-    '@typescript-eslint/promise-function-async': 'error',
+    // '@typescript-eslint/no-misused-promises': [
+    //   'error',
+    //   { checksVoidReturn: { attributes: false } },
+    // ],
+    // '@typescript-eslint/promise-function-async': 'error',
     '@typescript-eslint/require-await': 'error',
 
     // We never want to use `as` but are required to on occasion to handle

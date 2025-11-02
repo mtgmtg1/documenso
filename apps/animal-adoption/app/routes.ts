@@ -6,6 +6,7 @@ export default [
 
   // Contract routes
   route('contracts/new', 'routes/contracts/new.tsx'),
+  route('contracts/preview', 'routes/contract-preview.tsx'),
   route('contracts/:id', 'routes/contracts/view.tsx'),
 
   // Adopter history
